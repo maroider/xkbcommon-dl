@@ -41,6 +41,7 @@ pub type xkb_mod_index_t = u32;
 pub type xkb_mod_mask_t = u32;
 pub type xkb_led_index_t = u32;
 pub type xkb_led_mask_t = u32;
+pub type xkb_keymap_key_iter_t = Option<extern "C" fn(*mut xkb_keymap, xkb_keycode_t, *mut c_void)>;
 
 pub const XKB_KEYCODE_INVALID :u32 = 0xffffffff;
 pub const XKB_LAYOUT_INVALID  :u32 = 0xffffffff;
@@ -225,6 +226,25 @@ functions:
     fn xkb_keymap_ref(*mut xkb_keymap) -> *mut xkb_keymap,
     fn xkb_keymap_unref(*mut xkb_keymap) -> (),
     fn xkb_keymap_get_as_string(*mut xkb_keymap, xkb_keymap_format) -> *const c_char,
+
+    fn xkb_keymap_min_keycode(*mut xkb_keymap) -> xkb_keycode_t,
+    fn xkb_keymap_max_keycode(*mut xkb_keymap) -> xkb_keycode_t,
+    fn xkb_keymap_key_for_each(*mut xkb_keymap, xkb_keymap_key_iter_t, *mut c_void) -> (),
+    fn xkb_keymap_key_get_name(*mut xkb_keymap, xkb_keycode_t) -> *const c_char,
+    fn xkb_keymap_key_by_name(*mut xkb_keymap, *const c_char) -> xkb_keycode_t,
+    fn xkb_keymap_num_mods(*mut xkb_keymap) -> xkb_mod_index_t,
+    fn xkb_keymap_mod_get_name(*mut xkb_keymap, xkb_mod_index_t) -> *const c_char,
+    fn xkb_keymap_mod_get_index(*mut xkb_keymap, *const c_char) -> xkb_mod_index_t,
+    fn xkb_keymap_num_layouts(*mut xkb_keymap) -> xkb_layout_index_t 	,
+    fn xkb_keymap_layout_get_name(*mut xkb_keymap, xkb_layout_index_t) -> *const char,
+    fn xkb_keymap_layout_get_index(*mut xkb_keymap, *const c_char) -> xkb_layout_index_t,
+    fn xkb_keymap_num_leds(*mut xkb_keymap) -> xkb_led_index_t,
+    fn xkb_keymap_led_get_name(*mut xkb_keymap, xkb_led_index_t) -> *const char,
+    fn xkb_keymap_led_get_index(*mut xkb_keymap, *const char) -> xkb_led_index_t,
+    fn xkb_keymap_num_layouts_for_key(*mut xkb_keymap, xkb_keycode_t) -> xkb_layout_index_t,
+    fn xkb_keymap_num_levels_for_key(*mut xkb_keymap, xkb_keycode_t, xkb_layout_index_t) -> xkb_level_index_t,
+    fn xkb_keymap_key_get_mods_for_level(*mut xkb_keymap, xkb_keycode_t, xkb_layout_index_t, xkb_level_index_t, *mut xkb_mod_mask_t, usize) -> usize,
+    fn xkb_keymap_key_get_syms_by_level(*mut xkb_keymap, xkb_keycode_t, xkb_layout_index_t, xkb_level_index_t, *mut *const xkb_keysym_t) -> c_int,
     fn xkb_keymap_key_repeats(*mut xkb_keymap, xkb_keycode_t) -> c_int,
 
     fn xkb_state_new(*mut xkb_keymap) -> *mut xkb_state,
