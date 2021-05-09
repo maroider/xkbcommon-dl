@@ -8,6 +8,8 @@ extern crate lazy_static;
 #[macro_use]
 extern crate bitflags;
 
+use log::debug;
+
 pub mod keysyms;
 
 #[cfg(feature = "x11")]
@@ -243,7 +245,8 @@ functions:
     fn xkb_keymap_led_get_index(*mut xkb_keymap, *const char) -> xkb_led_index_t,
     fn xkb_keymap_num_layouts_for_key(*mut xkb_keymap, xkb_keycode_t) -> xkb_layout_index_t,
     fn xkb_keymap_num_levels_for_key(*mut xkb_keymap, xkb_keycode_t, xkb_layout_index_t) -> xkb_level_index_t,
-    fn xkb_keymap_key_get_mods_for_level(*mut xkb_keymap, xkb_keycode_t, xkb_layout_index_t, xkb_level_index_t, *mut xkb_mod_mask_t, usize) -> usize,
+    // (Artur) I commented out `xkb_keymap_key_get_mods_for_level` because it doesn't exist on Ubuntu 20.04
+    // fn xkb_keymap_key_get_mods_for_level(*mut xkb_keymap, xkb_keycode_t, xkb_layout_index_t, xkb_level_index_t, *mut xkb_mod_mask_t, usize) -> usize,
     fn xkb_keymap_key_get_syms_by_level(*mut xkb_keymap, xkb_keycode_t, xkb_layout_index_t, xkb_level_index_t, *mut *const xkb_keysym_t) -> c_int,
     fn xkb_keymap_key_repeats(*mut xkb_keymap, xkb_keycode_t) -> c_int,
 
@@ -303,7 +306,14 @@ functions:
 
 lazy_static!(
     pub static ref XKBCOMMON_OPTION: Option<XkbCommon> = {
-        unsafe { XkbCommon::open("libxkbcommon.so") }.ok()
+        let xkb_common = unsafe { XkbCommon::open("libxkbcommon.so") };
+        match xkb_common {
+            Ok(v) => Some(v),
+            Err(e) => {
+                debug!("Failed opening `libxkbcommon.so`. Error: {:?}", e);
+                None
+            }
+        }
     };
     pub static ref XKBCOMMON_HANDLE: &'static XkbCommon = {
         XKBCOMMON_OPTION.as_ref().expect("Library libxkbcommon.so could not be loaded.")
