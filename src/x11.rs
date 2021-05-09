@@ -1,5 +1,6 @@
 use std::os::raw::c_int;
 
+use dlib::DlError::CantOpen;
 use x11_dl::xlib_xcb::xcb_connection_t;
 
 use super::*;
@@ -42,7 +43,28 @@ functions:
 
 lazy_static!(
     pub static ref XKBCOMMON_X11_OPTION: Option<XkbCommonX11> = {
-        unsafe { XkbCommonX11::open("libxkbcommon-x11.so").ok() }
+        let first_name = "libxkbcommon-x11.so";
+        let second_name = "libxkbcommon-x11.so.0";
+
+        let xkbc_x11 = unsafe { XkbCommonX11::open(first_name) };
+        match xkbc_x11 {
+            Ok(v) => Some(v),
+            Err(CantOpen(_)) => {
+                // Try with a different filename
+                let xkbc_x11 = unsafe { XkbCommonX11::open(second_name) };
+                match xkbc_x11 {
+                    Ok(v) => Some(v),
+                    Err(e) => {
+                        debug!("Failed to load `{}`. Error {:?}", second_name, e);
+                        None
+                    }
+                }
+            }
+            Err(e) => {
+                debug!("Failed to load `{}`. Error {:?}", first_name, e);
+                None
+            }
+        }
     };
     pub static ref XKBCOMMON_X11_HANDLE: &'static XkbCommonX11 = {
         XKBCOMMON_X11_OPTION.as_ref().expect("Library libxkbcommon-x11.so could not be loaded.")
