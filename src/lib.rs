@@ -8,12 +8,13 @@ extern crate lazy_static;
 #[macro_use]
 extern crate bitflags;
 
-use log::debug;
-
 pub mod keysyms;
 
 #[cfg(feature = "x11")]
 pub mod x11;
+
+use log::debug;
+use dlib::DlError::CantOpen;
 
 use std::os::raw::{c_char, c_int, c_uint, c_void};
 
@@ -306,11 +307,23 @@ functions:
 
 lazy_static!(
     pub static ref XKBCOMMON_OPTION: Option<XkbCommon> = {
-        let xkb_common = unsafe { XkbCommon::open("libxkbcommon.so") };
+        let first_name = "libxkbcommon.so";
+        let second_name = "libxkbcommon.so.0";
+        let xkb_common = unsafe { XkbCommon::open(first_name) };
         match xkb_common {
             Ok(v) => Some(v),
+            Err(CantOpen(_)) => {
+                let xkb_common = unsafe { XkbCommon::open(second_name) };
+                match xkb_common {
+                    Ok(v) => Some(v),
+                    Err(e) => {
+                        debug!("Failed opening `{}`. Error: {:?}", second_name, e);
+                        None
+                    }
+                }
+            }
             Err(e) => {
-                debug!("Failed opening `libxkbcommon.so`. Error: {:?}", e);
+                debug!("Failed opening `{}`. Error: {:?}", first_name, e);
                 None
             }
         }
@@ -319,7 +332,26 @@ lazy_static!(
         XKBCOMMON_OPTION.as_ref().expect("Library libxkbcommon.so could not be loaded.")
     };
     pub static ref XKBCOMMON_COMPOSE_OPTION: Option<XkbCommonCompose> = {
-        unsafe { XkbCommonCompose::open("libxkbcommon.so") }.ok()
+        let first_name = "libxkbcommon.so";
+        let second_name = "libxkbcommon.so.0";
+        let compose = unsafe { XkbCommonCompose::open(first_name) };
+        match compose {
+            Ok(v) => Some(v),
+            Err(CantOpen(_)) => {
+                let xkb_common = unsafe { XkbCommonCompose::open(second_name) };
+                match xkb_common {
+                    Ok(v) => Some(v),
+                    Err(e) => {
+                        debug!("Failed loading the compose module from `{}`. Error: {:?}", second_name, e);
+                        None
+                    }
+                }
+            }
+            Err(e) => {
+                debug!("Failed loading the compose module from `{}`. error: {:?}", first_name, e);
+                None
+            }
+        }
     };
     pub static ref XKBCOMMON_COMPOSE_HANDLE: &'static XkbCommonCompose = {
         XKBCOMMON_COMPOSE_OPTION.as_ref().expect("Could not load compose module from libxkbcommon.so.")
